@@ -6,6 +6,7 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 import { AppointmentService } from '../services/AppointmentService';
 import { HospitalService } from '../services/HospitalService';
 import { UserService } from '../services/UserService';
+import { AuditService } from '../services/AuditService';
 
 dotenv.config();
 
@@ -125,6 +126,7 @@ export const getToolsForUser = (user: any) => {
 
                 try {
                     const code = await AppointmentService.createAppointment(user.patientId, doctor_id, date, slot_start);
+                    await AuditService.log(user.userId, 'CREATE_APPOINTMENT', { doctor_id, date, slot_start, code });
                     return `Successfully booked with ${doctor.name}! Confirmation Code: ${code}`;
                 } catch (e: any) {
                     if (e.message === 'Slot already booked.') return "Slot already booked.";
@@ -154,6 +156,7 @@ export const getToolsForUser = (user: any) => {
 
                 try {
                     const code = await AppointmentService.createAppointment(patient_id, doctor_id, date, slot_start);
+                    await AuditService.log(user.userId, 'ADMIN_CREATE_APPOINTMENT', { patient_id, doctor_id, date, slot_start, code });
                     return `Admin: Booked ${doctor.name} for patient ID ${patient_id}. Code: ${code}`;
                 } catch (e: any) { return "Error booking."; }
             },
@@ -182,6 +185,7 @@ export const getToolsForUser = (user: any) => {
                         slot_start,
                         user.role === 'patient' ? user.patientId : undefined
                     );
+                    await AuditService.log(user.userId, 'UPDATE_APPOINTMENT', { confirmation_code, date, slot_start });
                     return `Appointment updated to ${date} at ${slot_start}.`;
                 } catch (e: any) {
                     return e.message || "Error updating appointment.";
@@ -204,6 +208,7 @@ export const getToolsForUser = (user: any) => {
                         confirmation_code,
                         user.role === 'patient' ? user.patientId : undefined
                     );
+                    await AuditService.log(user.userId, 'CANCEL_APPOINTMENT', { confirmation_code });
                     return "Appointment cancelled successfully.";
                 } catch (e: any) {
                     return e.message || "Error cancelling appointment.";

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import pool from '../db/pool';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { AuditService } from '../services/AuditService';
 
 const router = Router();
 
@@ -32,6 +33,8 @@ router.post('/login', async (req, res) => {
         };
 
         const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });
+
+        await AuditService.log(user.id, 'LOGIN', { email: user.email });
 
         res.json({ token, user: tokenPayload });
     } catch (error) {

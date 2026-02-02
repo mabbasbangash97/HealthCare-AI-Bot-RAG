@@ -81,3 +81,12 @@ CREATE TABLE appointments (
 -- Add Foreign Key constraints for users table after other tables exist
 ALTER TABLE users ADD CONSTRAINT fk_users_patient FOREIGN KEY (patient_id) REFERENCES patients(id);
 ALTER TABLE users ADD CONSTRAINT fk_users_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id);
+
+-- Audit logs for tracking user actions
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id), -- Updated to include reference if possible
+    action TEXT NOT NULL,
+    details JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

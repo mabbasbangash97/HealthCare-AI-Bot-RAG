@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMS Bot | Premium Healthcare Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-light: #3b82f6;
+            --secondary: #64748b;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--bg-card);
+            padding: 12px 40px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            z-index: 10;
+            height: 70px;
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-pill {
+            padding: 6px 16px;
+            background: #eff6ff;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #dbeafe;
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #ef4444;
+            background: transparent;
+            border: 1px solid #fee2e2;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            flex-grow: 1;
+            overflow: hidden;
+            height: calc(100vh - 70px);
+        }
+
+        /* Chat Area */
+        .chat-section {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            overflow: hidden;
+            background: #fcfdfe;
+        }
+
+        #chat-window {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            padding: 12px 18px;
+            border-radius: var(--radius);
+            line-height: 1.5;
+            font-size: 15px;
+            position: relative;
+            animation: fadeIn 0.1s ease forwards;
+            max-width: 80%;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .bot {
+            background: white;
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-input-area {
+            padding: 20px 40px;
+            border-top: 1px solid var(--border);
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px 20px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-light);
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .send-button:hover {
+            background: var(--primary-light);
+        }
+
+        .send-button:disabled {
+            background: var(--secondary);
+            cursor: not-allowed;
+        }
+
+        /* Sidebar Area */
+        .sidebar {
+            background: white;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+            border-left: 1px solid var(--border);
+        }
+
+        .sidebar-section h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .appointment-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            transition: transform 0.2s;
+        }
+
+        .appointment-card:hover {
+            transform: translateX(4px);
+            border-color: var(--primary-light);
+        }
+
+        .appointment-card div {
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 14px !important;
+            margin-bottom: 8px !important;
+            border-bottom: 1px solid #eef2f6;
+            padding-bottom: 4px;
+        }
+
+        .card-time {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .card-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .status-scheduled {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Login Modal Override */
+        #login-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            text-align: center;
+        }
+
+        .login-card h2 {
+            font-family: 'Outfit', sans-serif;
+            margin-bottom: 24px;
+            color: var(--primary);
+        }
+
+        .login-card input {
+            width: 100%;
+            margin-bottom: 16px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .login-card input:focus {
+            border-color: var(--primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+            font-size: 14px;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2>Hospital Login</h2>
+            <input type="text" id="email" placeholder="Email Address" value="alice@example.com">
+            <input type="password" id="password" placeholder="Password" value="alice123">
+            <button class="send-button" onclick="login()" style="width: 100%">Sign In</button>
+            <div id="login-status" style="margin-top: 15px; font-size: 14px;"></div>
+        </div>
+    </div>
+
+    <header>
+        <h1>Abbasi Bot</h1>
+        <div class="header-actions">
+            <div class="user-pill">
+                <span id="user-initials">?</span>
+                <span id="user-role">Guest</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <section class="chat-section">
+            <div id="chat-window">
+                <div class="message bot">
+                    Hello! I'm your healthcare assistant. How can I help you today?
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="input-group">
+                    <input type="text" id="chat-input"
+                        placeholder="Ask about doctors, schedules, or book an appointment..."
+                        onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button id="send-btn" class="send-button" onclick="sendMessage()">Send</button>
+                </div>
+                <div id="chat-status"
+                    style="font-size: 12px; color: var(--text-muted); margin-top: 8px; padding-left: 2px; height: 18px;">
+                </div>
+            </div>
+        </section>
+
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3>📅 Appointments</h3>
+                <div id="sidebar-content">
+                    <div class="empty-state">No active appointments</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        let token = localStorage.getItem('hms_token') || '';
+        let chatHistory = [];
+        let userProfile = JSON.parse(localStorage.getItem('hms_user') || 'null');
+
+        window.onload = () => {
+            if (token) {
+                document.getElementById('login-overlay').style.display = 'none';
+                updateUIForUser();
+                refreshSidebar();
+            }
+            // Auto-refresh sidebar every 30 seconds for background updates
+            setInterval(() => {
+                if (token) refreshSidebar();
+            }, 30000);
+        };
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('login-status');
+
+            statusDiv.innerText = 'Authenticating...';
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    token = data.token;
+                    userProfile = data.user;
+                    localStorage.setItem('hms_token', token);
+                    localStorage.setItem('hms_user', JSON.stringify(userProfile));
+                    document.getElementById('login-overlay').style.display = 'none';
+                    updateUIForUser();
+                    refreshSidebar();
+                    statusDiv.innerText = '';
+                } else {
+                    statusDiv.innerHTML = `<span style="color:red">Error: ${data.error}</span>`;
+                }
+            } catch (err) {
+                statusDiv.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('hms_token');
+            localStorage.removeItem('hms_user');
+            token = '';
+            userProfile = null;
+            chatHistory = [];
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('chat-window').innerHTML = '<div class="message bot">Hello! I\'m your healthcare assistant. How can I help you today?</div>';
+            document.getElementById('sidebar-content').innerHTML = '<div class="empty-state">No active appointments</div>';
+            document.getElementById('user-role').innerText = 'Guest';
+            document.getElementById('user-initials').innerText = '?';
+        }
+
+        function updateUIForUser() {
+            if (!userProfile) return;
+            document.getElementById('user-role').innerText = userProfile.role.toUpperCase();
+            document.getElementById('user-initials').innerText = userProfile.email[0].toUpperCase();
+        }
+
+        async function refreshSidebar() {
+            if (!token) return;
+            const container = document.getElementById('sidebar-content');
+            try {
+                const res = await fetch(`${API_BASE}/appointments/my`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    renderAppointments(data);
+                }
+            } catch (err) {
+                console.error('Sidebar refresh error', err);
+            }
+        }
+
+        function renderAppointments(list) {
+            const container = document.getElementById('sidebar-content');
+            if (!list || list.length === 0) {
+                container.innerHTML = '<div class="empty-state">No active appointments</div>';
+                return;
+            }
+
+            container.innerHTML = list.slice(0, 10).map(a => `
+                <div class="appointment-card">
+                    <div class="card-title">${a.doctor_name || 'Doctor (ID: ' + a.doctor_id + ')'}</div>
+                    <div>🗓️ ${new Date(a.scheduled_date).toLocaleDateString()}</div>
+                    <div class="card-time">⏰ ${a.slot_start.substring(0, 5)} - ${a.slot_end.substring(0, 5)}</div>
+                    <div>🔑 Code: <b>${a.confirmation_code}</b></div>
+                    <span class="card-status status-${a.status}">${a.status}</span>
+                </div>
+            `).join('');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const btn = document.getElementById('send-btn');
+            const message = input.value.trim();
+            const statusDiv = document.getElementById('chat-status');
+
+            if (!message) return;
+
+            appendMessage('user', message);
+            input.value = '';
+            statusDiv.innerText = 'Abbasi Bot is thinking...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message,
+                        history: chatHistory
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    appendMessage('bot', data.response);
+                    chatHistory.push({ role: 'user', content: message });
+                    chatHistory.push({ role: 'assistant', content: data.response });
+                    statusDiv.innerText = '';
+                    // Always refresh sidebar after agent response to reflect any changes
+                    refreshSidebar();
+                } else {
+                    appendMessage('bot', "Sorry, I encountered an error: " + data.error);
+                    statusDiv.innerText = '';
+                }
+            } catch (err) {
+                statusDiv.innerHTML = `<span style="color:red">Connection error: ${err.message}</span>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function appendMessage(role, text) {
+            const window = document.getElementById('chat-window');
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+
+            // Handle markdown-ish formatting for codes/bold
+            let formatted = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            formatted = formatted.replace(/\n/g, '<br>');
+
+            div.innerHTML = formatted;
+            window.appendChild(div);
+            window.scrollTop = window.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

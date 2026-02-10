@@ -5,6 +5,7 @@ import fs from 'fs';
 import { authenticateToken, requireRole } from '../middleware/auth';
 import { ReportService } from '../services/ReportService';
 import { UserService } from '../services/UserService';
+import { ReportAnalysisService } from '../services/ReportAnalysisService';
 
 const router = Router();
 
@@ -64,6 +65,17 @@ router.post('/upload', authenticateToken, requireRole('doctor'), upload.single('
             reportType || 'Other',
             description || ''
         );
+
+        // 3. Trigger AI Analysis (Async)
+        // Note: Running this in the background to avoid blocking the response
+        ReportAnalysisService.analyzeFile(file.path, file.mimetype)
+            .then(async (analysis: string) => {
+                const updatedDescription = (description ? description + '\n\n' : '') +
+                    '--- AI ANALYSIS ---\n' + analysis;
+                await ReportService.updateReportDescription(report.id, updatedDescription);
+                console.log(`Analysis complete for report ${report.id}`);
+            })
+            .catch((err: Error) => console.error(`Analysis failed for report ${report.id}:`, err));
 
         res.json({ success: true, report });
     } catch (err) {

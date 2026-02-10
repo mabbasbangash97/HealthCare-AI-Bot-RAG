@@ -28,4 +28,14 @@ export class ReportService {
         `, [patientId]);
         return res.rows;
     }
+
+    static async updateReportDescription(reportId: number, description: string) {
+        const res = await pool.query(`
+            UPDATE medical_reports 
+            SET description = $2
+            WHERE id = $1
+            RETURNING id, description
+        `, [reportId, description]);
+        return res.rows[0];
+    }
 }

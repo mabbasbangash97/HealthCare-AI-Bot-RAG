@@ -23,10 +23,46 @@ export class HospitalService {
 
     static async getDoctorSchedule(doctorId: number) {
         const res = await pool.query(
-            'SELECT day_of_week, start_time, end_time FROM schedules WHERE doctor_id = $1',
+            `SELECT TO_CHAR(schedule_date, 'Day') as day_of_week, start_time, end_time 
+             FROM schedules 
+             WHERE doctor_id = $1 AND schedule_date >= CURRENT_DATE
+             ORDER BY schedule_date`,
             [doctorId]
         );
         return res.rows;
+    }
+
+    static async getAllDoctorSchedules() {
+        const res = await pool.query(`
+            SELECT d.id, d.name as doctor_name, dep.name as department, 
+                   TO_CHAR(s.schedule_date, 'Day') as day_of_week, 
+                   s.start_time, s.end_time
+            FROM schedules s
+            JOIN doctors d ON s.doctor_id = d.id
+            JOIN departments dep ON d.department_id = dep.id
+            WHERE s.schedule_date >= CURRENT_DATE
+            ORDER BY d.name, s.schedule_date
+        `);
+
+        // Group by doctor
+        const schedules: any = {};
+        res.rows.forEach(((row: any) => {
+            if (!schedules[row.doctor_name]) {
+                schedules[row.doctor_name] = {
+                    doctor: row.doctor_name,
+                    id: row.id,
+                    department: row.department,
+                    shifts: []
+                };
+            }
+            schedules[row.doctor_name].shifts.push({
+                day: row.day_of_week.trim(),
+                start: row.start_time,
+                end: row.end_time
+            });
+        }));
+
+        return Object.values(schedules);
     }
 
     static async getDoctorById(doctorId: number) {

@@ -25,7 +25,7 @@ export class AppointmentService {
 
     static async getAppointmentsByDoctor(doctorId: number) {
         const res = await pool.query(`
-            SELECT a.*, p.first_name, p.last_name 
+            SELECT a.*, p.first_name, p.last_name, p.mrn
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
             WHERE a.doctor_id = $1 AND a.status = 'scheduled'
@@ -35,10 +35,10 @@ export class AppointmentService {
     }
 
     static async getAvailableSlots(doctorId: number, date: string) {
-        const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+        // New schema uses specific dates in schedules table
         const schedRes = await pool.query(
-            'SELECT start_time, end_time FROM schedules WHERE doctor_id = $1 AND day_of_week = $2',
-            [doctorId, dayName]
+            'SELECT start_time, end_time FROM schedules WHERE doctor_id = $1 AND schedule_date = $2',
+            [doctorId, date]
         );
 
         if (schedRes.rows.length === 0) return [];

@@ -17,6 +17,14 @@ async function migrate() {
         `);
         console.log('Audit logs table created.');
 
+        // 2. Add MRN column to patients
+        try {
+            await pool.query('ALTER TABLE patients ADD COLUMN IF NOT EXISTS mrn VARCHAR(50) UNIQUE');
+            console.log('MRN column added to patients.');
+        } catch (e) {
+            console.log('MRN column might already exist.');
+        }
+
         // 2. Add Status Change Logging support if needed
         // (Optional: triggers for automatic logging, but code-level is fine too)
 

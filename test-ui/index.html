@@ -1036,6 +1036,8 @@
 
             // Handle markdown-ish formatting for codes/bold
             let formatted = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            // Handle clickable links [label](url)
+            formatted = formatted.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" style="color:var(--primary); font-weight:600; text-decoration: underline;">$1</a>');
             formatted = formatted.replace(/\n/g, '<br>');
 
             div.innerHTML = formatted;

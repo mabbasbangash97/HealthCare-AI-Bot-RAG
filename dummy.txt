@@ -1,0 +1,4 @@
+MEDICAL REPORT
+Patient: John Doe
+Diagnosis: Hypertension
+Medications: Lisinopril 10mg

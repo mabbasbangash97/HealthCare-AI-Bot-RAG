@@ -1,24 +1,18 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
-    image: postgres:15
+    image: pgvector/pgvector:pg16
+    container_name: pgvector-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: hms_bot
+      POSTGRES_DB: zinjachatsql
+      POSTGRES_USER: postgresqladmin
+      POSTGRES_PASSWORD: "4Cx43QZPEKy7"
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  chroma:
-    image: chromadb/chroma:latest
-    ports:
-      - "8000:8000"
-    volumes:
-      - chroma_data:/chroma/chroma
+      - pgvector_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
-  chroma_data:
+  pgvector_data:

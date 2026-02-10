@@ -23,6 +23,7 @@
     "@langchain/core": "^1.1.18",
     "@langchain/openai": "^1.2.4",
     "@types/cors": "^2.8.19",
+    "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",
     "chromadb": "^3.2.2",
     "cors": "^2.8.6",
@@ -30,6 +31,7 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "langchain": "^1.2.16",
+    "multer": "^2.0.2",
     "pg": "^8.18.0"
   },
   "devDependencies": {

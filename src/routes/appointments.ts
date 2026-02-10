@@ -15,10 +15,47 @@ router.get('/my', authenticateToken, async (req: any, res: any) => {
         } else if (user.role === 'admin') {
             appointments = await AppointmentService.getAllAppointments();
         }
+
+        // Filter out past appointments
+        if (appointments && appointments.length > 0) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            appointments = appointments.filter((a: any) => new Date(a.scheduled_date) >= today);
+        }
+
         res.json(appointments);
     } catch (err) {
         console.error('Error fetching appointments:', err);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.post('/create', authenticateToken, async (req: any, res: any) => {
+    try {
+        const user = req.user;
+        const { date, slotStart, doctorId, patientId } = req.body;
+
+        let targetPatientId = user.patientId;
+
+        // Admin can book for anyone
+        if (user.role === 'admin') {
+            if (!patientId) return res.status(400).json({ error: 'Patient ID is required for admin booking' });
+            targetPatientId = patientId;
+        } else if (user.role === 'patient') {
+            // Patient booking for self
+            targetPatientId = user.patientId;
+        } else {
+            return res.status(403).json({ error: 'Doctors cannot book appointments via this API yet.' });
+        }
+
+        const code = await AppointmentService.createAppointment(targetPatientId, doctorId, date, slotStart);
+        res.json({ success: true, confirmationCode: code });
+    } catch (err: any) {
+        console.error('Booking error:', err);
+        if (err.message === 'Slot already booked.') {
+            return res.status(400).json({ error: 'Slot already booked' });
+        }
+        res.status(500).json({ error: 'Booking failed', details: err.message });
     }
 });
 

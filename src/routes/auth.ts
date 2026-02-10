@@ -12,7 +12,12 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const result = await pool.query(`
+            SELECT u.*, p.mrn 
+            FROM users u 
+            LEFT JOIN patients p ON u.patient_id = p.id 
+            WHERE u.email = $1
+        `, [email]);
         if (result.rows.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
@@ -29,7 +34,8 @@ router.post('/login', async (req, res) => {
             email: user.email,
             role: user.role,
             patientId: user.patient_id,
-            doctorId: user.doctor_id
+            doctorId: user.doctor_id,
+            mrn: user.mrn
         };
 
         const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });

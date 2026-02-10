@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HMS Bot | Premium Healthcare Assistant</title>
+    <title>HMS | Healthcare Portal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -12,16 +12,18 @@
         rel="stylesheet">
     <style>
         :root {
-            --primary: #1e40af;
-            --primary-light: #3b82f6;
-            --secondary: #64748b;
+            --primary: #0d9488;
+            --primary-light: #14b8a6;
+            --primary-dark: #0f766e;
+            --secondary: #475569;
             --bg-main: #f8fafc;
             --bg-card: #ffffff;
-            --text-main: #1e293b;
+            --text-main: #334155;
             --text-muted: #64748b;
             --border: #e2e8f0;
-            --radius: 12px;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --radius: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(13, 148, 136, 0.05);
+            --shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.1), 0 2px 4px -2px rgba(13, 148, 136, 0.1);
         }
 
         * {
@@ -42,22 +44,32 @@
 
         header {
             background: var(--bg-card);
-            padding: 12px 40px;
-            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            border-bottom: 2px solid var(--primary);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            box-shadow: var(--shadow-sm);
             z-index: 10;
-            height: 70px;
+            height: 90px;
             flex-shrink: 0;
         }
 
         header h1 {
             font-family: 'Outfit', sans-serif;
-            font-size: 24px;
-            color: var(--primary);
+            font-size: 28px;
+            color: var(--primary-dark);
             font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .logo {
+            height: 55px;
+            width: auto;
         }
 
         .header-actions {
@@ -68,7 +80,7 @@
 
         .user-pill {
             padding: 6px 16px;
-            background: #eff6ff;
+            background: #f0fdfa;
             border-radius: 20px;
             font-size: 14px;
             font-weight: 500;
@@ -76,7 +88,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            border: 1px solid #dbeafe;
+            border: 1px solid #ccfbf1;
         }
 
         .logout-btn {
@@ -98,10 +110,39 @@
 
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 340px;
+            grid-template-columns: 280px 1fr 340px;
             flex-grow: 1;
             overflow: hidden;
-            height: calc(100vh - 70px);
+            height: calc(100vh - 90px);
+            position: relative;
+        }
+
+        /* Mobile Controls */
+        .mobile-nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            margin-right: -8px;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 15;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
         }
 
         /* Chat Area */
@@ -154,7 +195,7 @@
             align-self: flex-start;
             border-bottom-left-radius: 2px;
             border: 1px solid var(--border);
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
         }
 
         .chat-input-area {
@@ -213,16 +254,27 @@
             flex-direction: column;
             gap: 24px;
             overflow-y: auto;
+        }
+
+        .sidebar-left {
+            border-right: 1px solid var(--border);
+        }
+
+        .sidebar-right {
             border-left: 1px solid var(--border);
         }
 
         .sidebar-section h3 {
             font-family: 'Outfit', sans-serif;
-            font-size: 18px;
+            font-size: 14px;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
             gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--secondary);
+            font-weight: 600;
         }
 
         .appointment-card {
@@ -278,6 +330,53 @@
             color: #991b1b;
         }
 
+        /* History Items */
+        .history-item {
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-item:hover {
+            background: #f1f5f9;
+        }
+
+        .history-item.active {
+            background: #f0fdfa;
+            border-color: var(--primary-light);
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 10px;
+            background: white;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .new-chat-btn:hover {
+            background: #f0fdfa;
+        }
+
         /* Login Modal Override */
         #login-overlay {
             position: fixed;
@@ -296,7 +395,7 @@
             border-radius: 20px;
             width: 100%;
             max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            box-shadow: var(--shadow-lg);
             text-align: center;
         }
 
@@ -328,13 +427,147 @@
             border: 1px dashed var(--border);
             border-radius: 10px;
         }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 18px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            border-bottom-left-radius: 2px;
+            align-self: flex-start;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            animation: typingPulse 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingPulse {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.6);
+                opacity: 0.4;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 240px 1fr 280px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            header {
+                padding: 0 20px;
+            }
+
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 280px;
+                z-index: 20;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+            }
+
+            .sidebar-left {
+                left: 0;
+                transform: translateX(-100%);
+            }
+
+            .sidebar-right {
+                right: 0;
+                transform: translateX(100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .mobile-nav-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .user-pill {
+                padding: 4px 10px;
+                font-size: 12px;
+            }
+
+            #user-mrn {
+                display: none;
+            }
+
+            .chat-input-area {
+                padding: 15px 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 20px;
+                gap: 8px;
+            }
+
+            .logo {
+                height: 40px;
+            }
+
+            .message {
+                max-width: 95%;
+                font-size: 14px;
+            }
+
+            #chat-window {
+                padding: 20px 15px;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+
+            .logout-btn {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div id="login-overlay">
         <div class="login-card">
-            <h2>Hospital Login</h2>
+            <h2>HMS Login</h2>
             <input type="text" id="email" placeholder="Email Address" value="alice@example.com">
             <input type="password" id="password" placeholder="Password" value="alice123">
             <button class="send-button" onclick="login()" style="width: 100%">Sign In</button>
@@ -342,22 +575,91 @@
         </div>
     </div>
 
+    <div id="upload-overlay" style="display: none;">
+        <div class="login-card" style="max-width: 500px; text-align: left;">
+            <h2 style="margin-bottom: 20px;">Upload Medical Report</h2>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--secondary);">Patient MRN</label>
+                <input type="text" id="upload-mrn" placeholder="e.g. MRN-123..." style="margin-top: 4px;">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--secondary);">Report Type</label>
+                <select id="upload-type"
+                    style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; outline: none;">
+                    <option value="Lab Report">Lab Report</option>
+                    <option value="X-Ray">X-Ray</option>
+                    <option value="Prescription">Prescription</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--secondary);">Description</label>
+                <input type="text" id="upload-desc" placeholder="e.g. Blood Test Results" style="margin-top: 4px;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--secondary);">Select File</label>
+                <input type="file" id="upload-file" style="margin-top: 4px; padding: 8px;">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="send-button" onclick="uploadReport()" style="flex: 1;">Upload</button>
+                <button class="logout-btn" onclick="toggleUploadModal(false)"
+                    style="flex: 1; text-align: center;">Cancel</button>
+            </div>
+            <div id="upload-status" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
+        </div>
+    </div>
+
     <header>
-        <h1>Abbasi Bot</h1>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <button class="mobile-nav-toggle" onclick="toggleSidebar('left')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <h1>
+                <img src="https://cdn.prod.website-files.com/68a47640171ce922083b96d9/68ba6dcd38dc9ab5e8f28f2a_Mask%20group%20(1)-min.png"
+                    alt="HMS Logo" class="logo">
+                HMS
+            </h1>
+        </div>
         <div class="header-actions">
             <div class="user-pill">
-                <span id="user-initials">?</span>
+                <span id="user-initials" class="user-initials">?</span>
                 <span id="user-role">Guest</span>
+                <span id="user-mrn" style="font-size: 11px; opacity: 0.8; margin-left: 8px;"></span>
             </div>
+            <button class="mobile-nav-toggle" onclick="toggleSidebar('right')" style="color: var(--secondary)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+            </button>
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </header>
 
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeAllSidebars()"></div>
+
     <div class="main-layout">
+        <aside class="sidebar sidebar-left">
+            <div class="sidebar-section">
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    New Chat
+                </button>
+                <h3>History</h3>
+                <div id="history-content">
+                    <div class="empty-state">No chat history</div>
+                </div>
+            </div>
+        </aside>
+
         <section class="chat-section">
             <div id="chat-window">
                 <div class="message bot">
-                    Hello! I'm your healthcare assistant. How can I help you today?
+                    Welcome to the HMS Healthcare Portal. How can I assist you today?
                 </div>
             </div>
             <div class="chat-input-area">
@@ -367,15 +669,22 @@
                         onkeypress="if(event.key==='Enter') sendMessage()">
                     <button id="send-btn" class="send-button" onclick="sendMessage()">Send</button>
                 </div>
-                <div id="chat-status"
-                    style="font-size: 12px; color: var(--text-muted); margin-top: 8px; padding-left: 2px; height: 18px;">
+                <div id="chat-status" style="display: none;">
                 </div>
             </div>
         </section>
 
-        <aside class="sidebar">
+        <aside class="sidebar sidebar-right">
+            <div id="doctor-controls" class="sidebar-section"
+                style="display: none; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px;">
+                <h3>Medical Reports</h3>
+                <button class="new-chat-btn" onclick="toggleUploadModal(true)"
+                    style="background: #f0fdfa; border-style: dashed;">
+                    + Upload Report
+                </button>
+            </div>
             <div class="sidebar-section">
-                <h3>📅 Appointments</h3>
+                <h3>Appointments</h3>
                 <div id="sidebar-content">
                     <div class="empty-state">No active appointments</div>
                 </div>
@@ -384,20 +693,35 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:3000';
+        const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('ngrok')
+            ? window.location.origin
+            : 'https://0108d664eca7.ngrok-free.app';
         let token = localStorage.getItem('hms_token') || '';
         let chatHistory = [];
+        let currentSessionId = null;
         let userProfile = JSON.parse(localStorage.getItem('hms_user') || 'null');
 
-        window.onload = () => {
+        window.onload = async () => {
             if (token) {
                 document.getElementById('login-overlay').style.display = 'none';
                 updateUIForUser();
-                refreshSidebar();
+                await refreshSidebar();
+                const sessions = await refreshHistory();
+
+                // If we have a saved session ID, load it, otherwise load the most recent one
+                const savedSessionId = localStorage.getItem('hms_current_session');
+                if (savedSessionId) {
+                    loadSession(parseInt(savedSessionId));
+                } else if (sessions && sessions.length > 0) {
+                    loadSession(sessions[0].id);
+                }
             }
-            // Auto-refresh sidebar every 30 seconds for background updates
+            // Auto-refresh sidebar every 30 seconds
             setInterval(() => {
-                if (token) refreshSidebar();
+                if (token) {
+                    refreshSidebar();
+                    refreshHistory();
+                }
             }, 30000);
         };
 
@@ -422,6 +746,7 @@
                     document.getElementById('login-overlay').style.display = 'none';
                     updateUIForUser();
                     refreshSidebar();
+                    refreshHistory();
                     statusDiv.innerText = '';
                 } else {
                     statusDiv.innerHTML = `<span style="color:red">Error: ${data.error}</span>`;
@@ -437,22 +762,98 @@
             token = '';
             userProfile = null;
             chatHistory = [];
+            currentSessionId = null;
             document.getElementById('login-overlay').style.display = 'flex';
-            document.getElementById('chat-window').innerHTML = '<div class="message bot">Hello! I\'m your healthcare assistant. How can I help you today?</div>';
+            document.getElementById('chat-window').innerHTML = '<div class="message bot">Welcome to the HMS Healthcare Portal. How can I assist you today?</div>';
             document.getElementById('sidebar-content').innerHTML = '<div class="empty-state">No active appointments</div>';
+            document.getElementById('history-content').innerHTML = '<div class="empty-state">No chat history</div>';
             document.getElementById('user-role').innerText = 'Guest';
             document.getElementById('user-initials').innerText = '?';
+            document.getElementById('user-mrn').innerText = '';
         }
 
         function updateUIForUser() {
             if (!userProfile) return;
             document.getElementById('user-role').innerText = userProfile.role.toUpperCase();
             document.getElementById('user-initials').innerText = userProfile.email[0].toUpperCase();
+            if (userProfile.mrn) {
+                document.getElementById('user-mrn').innerText = `| ${userProfile.mrn}`;
+            } else {
+                document.getElementById('user-mrn').innerText = '';
+            }
+
+            // Show Doctor Controls
+            const docControls = document.getElementById('doctor-controls');
+            if (userProfile.role === 'doctor') {
+                docControls.style.display = 'block';
+            } else {
+                docControls.style.display = 'none';
+            }
+        }
+
+        // ... existing functions ...
+
+        function toggleUploadModal(show) {
+            const overlay = document.getElementById('upload-overlay');
+            // Reuse login overlay styles but specific ID
+            // We need to apply the fixed position style to make it show as overlay
+            if (show) {
+                overlay.style.display = 'flex';
+                // Copy styles from login-overlay dynamically or ensure CSS class handles it
+                overlay.style.position = 'fixed';
+                overlay.style.inset = '0';
+                overlay.style.background = 'rgba(15, 23, 42, 0.8)';
+                overlay.style.backdropFilter = 'blur(4px)';
+                overlay.style.zIndex = '100';
+                overlay.style.alignItems = 'center';
+                overlay.style.justifyContent = 'center';
+            } else {
+                overlay.style.display = 'none';
+                document.getElementById('upload-status').innerText = '';
+            }
+        }
+
+        async function uploadReport() {
+            const mrn = document.getElementById('upload-mrn').value;
+            const type = document.getElementById('upload-type').value;
+            const desc = document.getElementById('upload-desc').value;
+            const fileInput = document.getElementById('upload-file');
+            const statusDiv = document.getElementById('upload-status');
+
+            if (!mrn || !fileInput.files[0]) {
+                statusDiv.innerHTML = '<span style="color:red">Please enter Patient MRN and select a file.</span>';
+                return;
+            }
+
+            statusDiv.innerText = 'Uploading...';
+
+            const formData = new FormData();
+            formData.append('mrn', document.getElementById('upload-mrn').value);
+            formData.append('reportType', type);
+            formData.append('description', desc);
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const res = await fetch(`${API_BASE}/reports/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }, // Content-Type header auto-set by FormData
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    statusDiv.innerHTML = '<span style="color:green; font-weight:bold">Upload Successful!</span>';
+                    setTimeout(() => toggleUploadModal(false), 1500);
+                } else {
+                    statusDiv.innerHTML = `<span style="color:red">Error: ${data.error}</span>`;
+                }
+            } catch (err) {
+                statusDiv.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
+            }
         }
 
         async function refreshSidebar() {
             if (!token) return;
-            const container = document.getElementById('sidebar-content');
             try {
                 const res = await fetch(`${API_BASE}/appointments/my`, {
                     method: 'GET',
@@ -477,12 +878,89 @@
             container.innerHTML = list.slice(0, 10).map(a => `
                 <div class="appointment-card">
                     <div class="card-title">${a.doctor_name || 'Doctor (ID: ' + a.doctor_id + ')'}</div>
-                    <div>🗓️ ${new Date(a.scheduled_date).toLocaleDateString()}</div>
-                    <div class="card-time">⏰ ${a.slot_start.substring(0, 5)} - ${a.slot_end.substring(0, 5)}</div>
-                    <div>🔑 Code: <b>${a.confirmation_code}</b></div>
+                    <div class="card-date">Date: ${new Date(a.scheduled_date).toLocaleDateString()}</div>
+                    <div class="card-time">Time: ${a.slot_start.substring(0, 5)} - ${a.slot_end.substring(0, 5)}</div>
+                    <div class="card-code">Confirmation: <b>${a.confirmation_code}</b></div>
                     <span class="card-status status-${a.status}">${a.status}</span>
                 </div>
             `).join('');
+        }
+
+        async function refreshHistory() {
+            if (!token) return [];
+            try {
+                const res = await fetch(`${API_BASE}/chat/sessions`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    renderHistory(data);
+                    return data;
+                }
+            } catch (err) {
+                console.error('History refresh error', err);
+            }
+            return [];
+        }
+
+        function renderHistory(sessions) {
+            const container = document.getElementById('history-content');
+            if (!sessions || sessions.length === 0) {
+                container.innerHTML = '<div class="empty-state">No history recorded</div>';
+                return;
+            }
+
+            container.innerHTML = sessions.map(s => `
+                <div class="history-item ${Number(currentSessionId) === Number(s.id) ? 'active' : ''}" 
+                     onclick="loadSession(${s.id})">
+                    ${s.title || 'Consultation Session'}
+                </div>
+            `).join('');
+        }
+
+        async function loadSession(id) {
+            if (!id) return;
+            currentSessionId = id;
+            localStorage.setItem('hms_current_session', id);
+
+            // Immediately highlight in sidebar if possible
+            const items = document.querySelectorAll('.history-item');
+            items.forEach(item => {
+                item.classList.remove('active');
+            });
+
+            refreshHistory(); // Update active state in UI list
+
+            const chatWindow = document.getElementById('chat-window');
+            chatWindow.innerHTML = '<div class="empty-state">Loading history...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/chat/sessions/${id}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    chatWindow.innerHTML = '';
+                    chatHistory = data; // Set local message history for current context
+                    data.forEach(msg => appendMessage(msg.role === 'assistant' ? 'bot' : 'user', msg.content));
+                    if (data.length === 0) {
+                        chatWindow.innerHTML = '<div class="message bot">This chat is empty.</div>';
+                    }
+                }
+            } catch (err) {
+                chatWindow.innerHTML = '<div class="empty-state">Error loading history</div>';
+            }
+        }
+
+        function startNewChat() {
+            currentSessionId = null;
+            localStorage.removeItem('hms_current_session');
+            chatHistory = [];
+            document.getElementById('chat-input').value = '';
+            document.getElementById('chat-window').innerHTML = '<div class="message bot">Hello! I\'m HMS, your healthcare assistant. How can I help you today?</div>';
+            refreshHistory();
         }
 
         async function sendMessage() {
@@ -495,8 +973,16 @@
 
             appendMessage('user', message);
             input.value = '';
-            statusDiv.innerText = 'Abbasi Bot is thinking...';
             btn.disabled = true;
+
+            // Show typing indicator
+            const window = document.getElementById('chat-window');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'typing-indicator';
+            typingDiv.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+            window.appendChild(typingDiv);
+            window.scrollTop = window.scrollHeight;
 
             try {
                 const res = await fetch(`${API_BASE}/chat`, {
@@ -507,23 +993,37 @@
                     },
                     body: JSON.stringify({
                         message,
-                        history: chatHistory
+                        history: chatHistory.map(m => ({ role: m.role, content: m.content })),
+                        sessionId: currentSessionId
                     })
                 });
                 const data = await res.json();
+
+                // Remove typing indicator
+                if (document.getElementById('typing-indicator')) {
+                    document.getElementById('typing-indicator').remove();
+                }
+
                 if (res.ok) {
                     appendMessage('bot', data.response);
                     chatHistory.push({ role: 'user', content: message });
                     chatHistory.push({ role: 'assistant', content: data.response });
-                    statusDiv.innerText = '';
+
+                    if (!currentSessionId) {
+                        currentSessionId = data.sessionId;
+                        refreshHistory();
+                    }
+
                     // Always refresh sidebar after agent response to reflect any changes
                     refreshSidebar();
                 } else {
                     appendMessage('bot', "Sorry, I encountered an error: " + data.error);
-                    statusDiv.innerText = '';
                 }
             } catch (err) {
-                statusDiv.innerHTML = `<span style="color:red">Connection error: ${err.message}</span>`;
+                if (document.getElementById('typing-indicator')) {
+                    document.getElementById('typing-indicator').remove();
+                }
+                appendMessage('bot', "Connection error. Please try again.");
             } finally {
                 btn.disabled = false;
             }
@@ -542,6 +1042,39 @@
             window.appendChild(div);
             window.scrollTop = window.scrollHeight;
         }
+
+        // Mobile Sidebar Logic
+        function toggleSidebar(side) {
+            const sidebar = document.querySelector(`.sidebar-${side}`);
+            const overlay = document.getElementById('sidebar-overlay');
+            const isActive = sidebar.classList.contains('active');
+
+            closeAllSidebars();
+
+            if (!isActive) {
+                sidebar.classList.add('active');
+                overlay.classList.add('active');
+            }
+        }
+
+        function closeAllSidebars() {
+            document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('active'));
+            document.getElementById('sidebar-overlay').classList.remove('active');
+        }
+
+        // Override loadSession to close sidebar on mobile
+        const originalLoadSession = loadSession;
+        loadSession = async function (id) {
+            await originalLoadSession(id);
+            if (window.innerWidth <= 1024) closeAllSidebars();
+        };
+
+        // Override startNewChat to close sidebar on mobile
+        const originalStartNewChat = startNewChat;
+        startNewChat = function () {
+            originalStartNewChat();
+            if (window.innerWidth <= 1024) closeAllSidebars();
+        };
     </script>
 </body>
 

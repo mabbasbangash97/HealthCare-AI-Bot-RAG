@@ -13,41 +13,57 @@ async function ingest() {
         await client.connect();
         console.log('Connected to database for ingestion.');
 
-        // 1. Fetch data
-        const doctorsRes = await client.query('SELECT d.name, d.bio, dep.name as department FROM doctors d JOIN departments dep ON d.department_id = dep.id');
-        const hospitalRes = await client.query('SELECT * FROM hospitals');
-        const schedulesRes = await client.query(`
-            SELECT d.name as doctor_name, s.day_of_week, s.start_time, s.end_time 
-            FROM schedules s 
-            JOIN doctors d ON s.doctor_id = d.id
+        // 1. Fetch Rich Doctor Data
+        const doctorsRes = await client.query(`
+            SELECT d.*, dep.name as department_name 
+            FROM doctors d 
+            JOIN departments dep ON d.department_id = dep.id
         `);
+
+        // 2. Fetch Hospital Data (now with location)
+        const hospitalRes = await client.query('SELECT * FROM hospitals');
 
         const docs: Document[] = [];
 
-        // 2. Process Doctors
+        // 3. Process Doctors
         for (const dr of doctorsRes.rows) {
-            const content = `${dr.name} is a doctor in the ${dr.department} department. Bio: ${dr.bio}`;
+            // Construct a rich profile for semantic search
+            // We want retrieval to work for queries like:
+            // "Who specializes in heart issues?" -> Cardiology/Interventional Cardiology
+            // "Is there a female doctor?" -> (Implicitly Dr. Sarah/Ayesha) - though we don't strictly have gender, names help
+            // "Doctor with 10 years experience" -> experience field
+
+            const bioPart = dr.bio ? `Bio: ${dr.bio}. ` : '';
+            const specPart = dr.specialization ? `Specialization: ${dr.specialization}. ` : '';
+            const subSpecPart = dr.sub_specialty ? `Sub-specialty: ${dr.sub_specialty}. ` : '';
+            const qualPart = dr.qualifications ? `Qualifications: ${dr.qualifications}. ` : '';
+            const expPart = dr.experience ? `Experience: ${dr.experience}. ` : '';
+            const contactPart = dr.contact_info ? `Contact: ${dr.contact_info}. ` : '';
+            const logicPart = `Designation: ${dr.designation}. Status: ${dr.status}. Doctor Code: ${dr.doctor_code}.`;
+
+            const content = `Dr. ${dr.name} is a ${dr.designation} in the ${dr.department_name} department. 
+            ${specPart}${subSpecPart}${qualPart}${expPart}${bioPart}
+            ${logicPart}
+            ${contactPart}`;
+
             docs.push(new Document({
-                pageContent: content,
-                metadata: { type: 'doctor', name: dr.name, department: dr.department }
+                pageContent: content.replace(/\s+/g, ' ').trim(),
+                metadata: {
+                    type: 'doctor',
+                    name: dr.name,
+                    department: dr.department_name,
+                    specialization: dr.specialization,
+                    doctor_code: dr.doctor_code
+                }
             }));
         }
 
-        // 3. Process Hospital
+        // 4. Process Hospital
         for (const h of hospitalRes.rows) {
-            const content = `${h.name} is located at ${h.address}. Contact: ${h.phone}`;
+            const content = `${h.name} is a hospital located at ${h.location}. Address: ${h.address}. Phone: ${h.phone}.`;
             docs.push(new Document({
                 pageContent: content,
                 metadata: { type: 'hospital', name: h.name }
-            }));
-        }
-
-        // 4. Process Schedules
-        for (const s of schedulesRes.rows) {
-            const content = `${s.doctor_name} is available on ${s.day_of_week} from ${s.start_time} to ${s.end_time}.`;
-            docs.push(new Document({
-                pageContent: content,
-                metadata: { type: 'schedule', doctor: s.doctor_name, day: s.day_of_week }
             }));
         }
 
@@ -55,8 +71,14 @@ async function ingest() {
 
         // 5. Store in Chroma
         const embeddings = new OpenAIEmbeddings();
+
+        // Note: For a clean update, usually we might want to delete existing collection, but Chroma.fromDocuments appends.
+        // Given we changed schema significantly, appending old data might be bad.
+        // However, standard library doesn't easily support "delete collection" via this static method without getting the collection first.
+        // For this MVP update, we'll append/overwrite. In prod, we'd clear first.
+
         await Chroma.fromDocuments(docs, embeddings, {
-            collectionName: 'hospital_knowledge',
+            collectionName: 'hospital_knowledge_v2',
             url: process.env.CHROMA_URL,
         });
 

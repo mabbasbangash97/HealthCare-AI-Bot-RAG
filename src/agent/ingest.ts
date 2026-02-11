@@ -1,6 +1,7 @@
 import { Client } from 'pg';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { OpenAIEmbeddings } from '@langchain/openai';
+import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { Document } from '@langchain/core/documents';
 import dotenv from 'dotenv';
 
@@ -70,15 +71,25 @@ async function ingest() {
         console.log(`Prepared ${docs.length} documents for ingestion.`);
 
         // 5. Store in Chroma
-        const embeddings = new OpenAIEmbeddings();
+        const embeddings = new GoogleGenerativeAIEmbeddings({
+            apiKey: process.env.GEMINI_API_KEY,
+            model: 'gemini-embedding-001',
+        });
 
-        // Note: For a clean update, usually we might want to delete existing collection, but Chroma.fromDocuments appends.
-        // Given we changed schema significantly, appending old data might be bad.
-        // However, standard library doesn't easily support "delete collection" via this static method without getting the collection first.
-        // For this MVP update, we'll append/overwrite. In prod, we'd clear first.
+        const collectionName = 'hospital_knowledge_v2';
+
+        // 6. Delete existing collection to avoid dimension mismatch (OpenAI 1536 vs Gemini 768)
+        try {
+            const { ChromaClient } = require('chromadb');
+            const chromaClient = new ChromaClient({ path: process.env.CHROMA_URL });
+            await chromaClient.deleteCollection({ name: collectionName });
+            console.log(`Deleted existing collection: ${collectionName}`);
+        } catch (e) {
+            console.log(`Collection ${collectionName} does not exist or could not be deleted, proceeding...`);
+        }
 
         await Chroma.fromDocuments(docs, embeddings, {
-            collectionName: 'hospital_knowledge_v2',
+            collectionName: collectionName,
             url: process.env.CHROMA_URL,
         });
 

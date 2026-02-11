@@ -1,15 +1,16 @@
 import fs from 'fs';
-import { ChatOpenAI } from '@langchain/openai';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage } from '@langchain/core/messages';
 // @ts-ignore
 const pdfParse = require('pdf-parse');
 
 /**
- * Service to analyze medical reports (PDF/Images) using GPT-4o Vision and pdf-parse.
+ * Service to analyze medical reports (PDF/Images) using Gemini Vision and pdf-parse.
  */
 export class ReportAnalysisService {
-    private static llm = new ChatOpenAI({
-        modelName: 'gpt-4o',
+    private static llm = new ChatGoogleGenerativeAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        model: 'gemini-2.5-pro',
         temperature: 0,
     });
 

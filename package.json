@@ -21,6 +21,7 @@
     "@langchain/classic": "^1.0.13",
     "@langchain/community": "^1.1.10",
     "@langchain/core": "^1.1.18",
+    "@langchain/google-genai": "^2.1.17",
     "@langchain/openai": "^1.2.4",
     "@types/cors": "^2.8.19",
     "@types/multer": "^2.0.0",

@@ -6,7 +6,9 @@ export class AppointmentService {
             SELECT a.*, d.name as doctor_name 
             FROM appointments a 
             JOIN doctors d ON a.doctor_id = d.id 
-            WHERE a.patient_id = $1 AND a.status != 'cancelled'
+            WHERE a.patient_id = $1 
+              AND a.status != 'cancelled'
+              AND (a.scheduled_date > CURRENT_DATE OR (a.scheduled_date = CURRENT_DATE AND a.slot_start >= CURRENT_TIME))
             ORDER BY a.scheduled_date, a.slot_start
         `, [patientId]);
         return res.rows;
@@ -18,6 +20,7 @@ export class AppointmentService {
             FROM appointments a 
             JOIN patients p ON a.patient_id = p.id
             JOIN doctors d ON a.doctor_id = d.id
+            WHERE (a.scheduled_date > CURRENT_DATE OR (a.scheduled_date = CURRENT_DATE AND a.slot_start >= CURRENT_TIME))
             ORDER BY a.scheduled_date, a.slot_start
         `);
         return res.rows;
@@ -28,7 +31,9 @@ export class AppointmentService {
             SELECT a.*, p.first_name, p.last_name, p.mrn
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
-            WHERE a.doctor_id = $1 AND a.status = 'scheduled'
+            WHERE a.doctor_id = $1 
+              AND a.status = 'scheduled'
+              AND (a.scheduled_date > CURRENT_DATE OR (a.scheduled_date = CURRENT_DATE AND a.slot_start >= CURRENT_TIME))
             ORDER BY a.scheduled_date, a.slot_start
         `, [doctorId]);
         return res.rows;
@@ -54,15 +59,40 @@ export class AppointmentService {
         let current = new Date(`2000-01-01T${start_time}`);
         const end = new Date(`2000-01-01T${end_time}`);
 
+        // Today Check & 20-minute buffer
+        const now = new Date();
+        const bufferTime = new Date(now.getTime() + 20 * 60000);
+        const isToday = new Date(date).toLocaleDateString() === now.toLocaleDateString();
+
         while (current < end) {
-            const time = current.toTimeString().split(' ')[0];
-            if (!booked.has(time)) slots.push(time);
+            const timeStr = current.toTimeString().split(' ')[0];
+
+            let isPast = false;
+            if (isToday) {
+                const slotDateTime = new Date(`${date}T${timeStr}`);
+                if (slotDateTime < bufferTime) {
+                    isPast = true;
+                }
+            }
+
+            if (!booked.has(timeStr) && !isPast) {
+                slots.push(timeStr);
+            }
             current.setMinutes(current.getMinutes() + 30);
         }
         return slots;
     }
 
     static async createAppointment(patientId: number, doctorId: number, date: string, slotStart: string) {
+        // Validation: Future only + 20 min buffer
+        const now = new Date();
+        const bufferTime = new Date(now.getTime() + 20 * 60000);
+        const requestedDateTime = new Date(`${date}T${slotStart}`);
+
+        if (requestedDateTime < bufferTime) {
+            throw new Error("Error: Appointments must be booked at least 20 minutes in the future.");
+        }
+
         const code = `CONF-${Date.now()}`;
         const start = new Date(`2000-01-01T${slotStart}`);
         start.setMinutes(start.getMinutes() + 30);
@@ -93,6 +123,15 @@ export class AppointmentService {
     }
 
     static async updateAppointment(confirmationCode: string, date: string, slotStart: string, patientId?: number) {
+        // Validation: Future only + 20 min buffer
+        const now = new Date();
+        const bufferTime = new Date(now.getTime() + 20 * 60000);
+        const requestedDateTime = new Date(`${date}T${slotStart}`);
+
+        if (requestedDateTime < bufferTime) {
+            throw new Error("Error: Rescheduled time must be at least 20 minutes in the future.");
+        }
+
         if (patientId) {
             const check = await pool.query(
                 'SELECT 1 FROM appointments WHERE confirmation_code = $1 AND patient_id = $2',

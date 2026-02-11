@@ -16,13 +16,6 @@ router.get('/my', authenticateToken, async (req: any, res: any) => {
             appointments = await AppointmentService.getAllAppointments();
         }
 
-        // Filter out past appointments
-        if (appointments && appointments.length > 0) {
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            appointments = appointments.filter((a: any) => new Date(a.scheduled_date) >= today);
-        }
-
         res.json(appointments);
     } catch (err) {
         console.error('Error fetching appointments:', err);

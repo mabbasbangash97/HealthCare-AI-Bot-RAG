@@ -2,7 +2,7 @@ import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import dotenv from 'dotenv';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
-import { OpenAIEmbeddings } from '@langchain/openai';
+import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { AppointmentService } from '../services/AppointmentService';
 import { HospitalService } from '../services/HospitalService';
 import { UserService } from '../services/UserService';
@@ -19,7 +19,10 @@ export const getToolsForUser = (user: any) => {
     tools.push(tool(
         async ({ query }) => {
             try {
-                const embeddings = new OpenAIEmbeddings();
+                const embeddings = new GoogleGenerativeAIEmbeddings({
+                    apiKey: process.env.GEMINI_API_KEY,
+                    model: 'gemini-embedding-001',
+                });
                 const vectorStore = await Chroma.fromExistingCollection(embeddings, {
                     collectionName: 'hospital_knowledge_v2',
                     url: process.env.CHROMA_URL,
@@ -149,16 +152,97 @@ export const getToolsForUser = (user: any) => {
             },
             {
                 name: 'create_appointment',
-                description: 'Book an appointment for yourself. Always provide the doctor_name_confirmation to ensure accuracy.',
+                description: 'Book an appointment for yourself. Always provide the doctor_name_confirmation.',
                 schema: z.object({
                     doctor_id: z.number(),
-                    doctor_name_confirmation: z.string().describe('The name of the doctor (e.g., "Dr. Emily Brown")'),
-                    date: z.string(),
+                    doctor_name_confirmation: z.string().describe('The name of the doctor'),
+                    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
                     slot_start: z.string()
                 }),
             }
         ));
-    } else if (user.role === 'admin') {
+
+        // 7.5. get_patient_medical_profile (Patient Version - Self only)
+        tools.push(tool(
+            async ({ patient_id, mrn }) => {
+                let resolvedPatientId = patient_id;
+
+                // Resolve MRN to ID if ID is missing but MRN is provided
+                if (!resolvedPatientId && mrn) {
+                    const patientByMrn = await UserService.getPatientByMRN(mrn);
+                    if (!patientByMrn) return `Error: No patient found with MRN ${mrn}`;
+                    resolvedPatientId = patientByMrn.id;
+                }
+
+                // If no ID/MRN provided, default to self
+                if (!resolvedPatientId) {
+                    resolvedPatientId = user.patientId;
+                }
+
+                if (!resolvedPatientId) return "Error: Could not determine patient ID.";
+
+                // STRICT CHECK: Patient can ONLY view their own profile
+                if (resolvedPatientId !== user.patientId) {
+                    return "ACCESS DENIED: You are only allowed to view your own medical profile.";
+                }
+
+                const patient = await UserService.getPatientById(resolvedPatientId);
+                if (!patient) return `Error: Patient profile not found.`;
+
+                // Fetch medical reports
+                const reports = await ReportService.getReportsByPatient(resolvedPatientId);
+
+                // Calculate age
+                const birthDate = new Date(patient.dob);
+                const ageDifMs = Date.now() - birthDate.getTime();
+                const ageDate = new Date(ageDifMs);
+                const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+
+                return JSON.stringify({
+                    mrn: patient.mrn,
+                    first_name: patient.first_name,
+                    last_name: patient.last_name,
+                    age: age,
+                    dob: patient.dob,
+                    gender: patient.gender,
+                    blood_group: patient.blood_group,
+                    medical_notes: patient.health_notes,
+                    allergies: patient.allergies,
+                    chronic_diseases: patient.chronic_diseases,
+                    current_medications: patient.current_medications,
+                    uploaded_reports: reports.map((r: any) => {
+                        const filename = r.file_path.split('/').pop();
+                        const baseUrl = process.env.PUBLIC_URL || process.env.API_URL || 'http://localhost:3000';
+                        const url = `${baseUrl}/uploads/${filename}`;
+
+                        // Parse description to separate user input and AI analysis
+                        const parts = (r.description || '').split('--- AI ANALYSIS ---');
+                        const userDescription = parts[0]?.trim() || '';
+                        const aiAnalysis = parts[1]?.trim() || null;
+
+                        return {
+                            id: r.id,
+                            file_name: r.file_name,
+                            type: r.report_type,
+                            user_description: userDescription,
+                            ai_analysis: aiAnalysis,
+                            file_url: url,
+                            date: r.created_at
+                        };
+                    })
+                });
+            },
+            {
+                name: 'get_patient_medical_profile',
+                description: 'View your own medical history and uploaded reports. RESTRICTED: You can only access your own profile.',
+                schema: z.object({
+                    patient_id: z.number().optional().describe('Your Internal Patient ID'),
+                    mrn: z.string().optional().describe('Your Medical Record Number')
+                })
+            }
+        ));
+    }
+    else if (user.role === 'admin') {
         tools.push(tool(
             async ({ mrn, doctor_id, doctor_name_confirmation, date, slot_start }) => {
                 // Resolve MRN to patient_id
@@ -520,12 +604,20 @@ export const getToolsForUser = (user: any) => {
                     current_medications: patient.current_medications,
                     uploaded_reports: reports.map((r: any) => {
                         const filename = r.file_path.split('/').pop();
-                        const url = `${process.env.API_URL || 'http://localhost:3000'}/uploads/${filename}`;
+                        const baseUrl = process.env.PUBLIC_URL || process.env.API_URL || 'http://localhost:3000';
+                        const url = `${baseUrl}/uploads/${filename}`;
+
+                        // Parse description to separate user input and AI analysis
+                        const parts = (r.description || '').split('--- AI ANALYSIS ---');
+                        const userDescription = parts[0]?.trim() || '';
+                        const aiAnalysis = parts[1]?.trim() || null;
+
                         return {
                             id: r.id,
                             file_name: r.file_name,
                             type: r.report_type,
-                            description: r.description,
+                            user_description: userDescription,
+                            ai_analysis: aiAnalysis,
                             file_url: url,
                             date: r.created_at
                         };
@@ -610,9 +702,10 @@ export const getToolsForUser = (user: any) => {
                     chronic_diseases: patient.chronic_diseases,
                     current_medications: patient.current_medications,
                     uploaded_reports: reports.map((r: any) => {
-                        // Normalize path: 'uploads/file.png' or './uploads/file.png' -> 'http://localhost:3000/uploads/file.png'
+                        // Normalize path: 'uploads/file.png' or './uploads/file.png' -> http://localhost:3000/uploads/file.png
                         const filename = r.file_path.split('/').pop();
-                        const url = `${process.env.API_URL || 'http://localhost:3000'}/uploads/${filename}`;
+                        const baseUrl = process.env.PUBLIC_URL || process.env.API_URL || 'http://localhost:3000';
+                        const url = `${baseUrl}/uploads/${filename}`;
 
                         return {
                             id: r.id,
